@@ -92,8 +92,6 @@ def parse_config(path, temp_settings):
 
 
 def update_settings():
-    for i in settings.iteritems():
-            print i
     if not settings['general']['static_path']:
         settings['general']['static_path'] = join(settings['general']['shoal_dir'], 'static')
     if not settings['general']['template_path']:

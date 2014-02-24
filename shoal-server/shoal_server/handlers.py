@@ -5,7 +5,8 @@ import view
 
 class IndexHandler(tornado.web.RequestHandler):
     def get(self):
-        self.write(self.application.global_settings)
+        #self.write(self.application.global_settings)
+	view.view_index()
 
 
 class NearestHandler(tornado.web.RequestHandler):
