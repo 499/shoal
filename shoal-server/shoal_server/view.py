@@ -1,10 +1,10 @@
 import web
 import json
-import operator
 import math
-from time import time
+import operator
 from config import settings
 from shoal_server import utilities
+import tornado.template
 from __version__ import version
 
 t_globals = dict(
@@ -13,18 +13,19 @@ t_globals = dict(
     squid_active_time=settings["squid"]["inactive_time"]
 )
 
-TEMPLATES = 'templates/'
+TEMPLATES = '../templates/'
 
-def view_index(handler, size=100):
+
+def view_index(size=100):
     """
         returns an index template with a sorted_shoal list with upper
         and lower bounds from the given size
     """
     #params = web.input()
     #page = params.page if hasattr(params, 'page') else 1
-    #sorted_shoal = sorted(web.shoal.values(), key=operator.attrgetter('last_active'))
-    #sorted_shoal.reverse()
-    #total = len(sorted_shoal)
+    sorted_shoal = sorted(web.shoal.values(), key=operator.attrgetter('last_active'))
+    sorted_shoal.reverse()
+    total = len(sorted_shoal)
     #page = int(page)
     page = 1
     sorted_shoal = []
@@ -45,7 +46,8 @@ def view_index(handler, size=100):
         page = pages
 
     lower, upper = int(size * (page - 1)), int(size * page)
-    return handler.render("index.html")
+    loader = tornado.template.Loader(TEMPLATES)
+    return loader.load("index.html").generate(total=total)
 
 
 def view_nearest(count):
@@ -69,6 +71,7 @@ def view_nearest(count):
         return json.dumps(squid_json)
     else:
         return json.dumps(None)
+
 
 def view_wpad(**k):
     """

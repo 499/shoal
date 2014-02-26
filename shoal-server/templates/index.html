@@ -1,11 +1,11 @@
-$def with (now, total, shoal, page, pages, size)
 <div class="row-fluid">
     <div class="span6 offset3" style="text-align:center">
         <h2>List of Active Squids</h2>
-        $if total > 0:
+        {% if total > 0 %}
             <h5 class="text-success">$total active in the last $squid_active_time seconds</h5>
-        $else:
+        {% else %}
             <h5 class="text-info">None active in the last $squid_active_time seconds</h5>
+        {% end %}
         </div>
 <div class="row-fluid">
   <div class='span12'>
@@ -29,18 +29,18 @@ $def with (now, total, shoal, page, pages, size)
       <tbody>
         $for i,squid in enumerate(shoal):
             $ last_msg = int(now - squid.last_active)
-            $ alive_time = int(now - squid.created); 
+            $ alive_time = int(now - squid.created);
             $ hour = int(alive_time/60/60)
             $ minute = (alive_time - hour*60*60) / 60
             $ second = alive_time - hour*60*60 - minute*60
-    
+
             $if last_msg < squid_active_time/3:
                 $ state = 'success'
             $elif last_msg >= squid_active_time/3 and last_msg < squid_active_time*2/3:
                 $ state = 'warning'
             $else:
                 $ state = 'error'
-    
+
             <tr class='$state'>
                 <td><span class="badge badge-$state">$((i+1)+(page-1)*size)</td>
                 <td>$squid.hostname</td>
@@ -86,7 +86,7 @@ $if pages > 1:
           $ lower = 0
           $ upper = page + 3
           $if page > 5 and page <= pages:
-            $ lower = page - 4 
+            $ lower = page - 4
             $ upper = page + 3
           $if page > pages - 5 and page <= pages:
             $ lower = page - 4
