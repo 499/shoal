@@ -2,9 +2,12 @@ import web
 import json
 import math
 import operator
+import tornado.template
+import time
+from shoal import SquidNode
 from config import settings
 from shoal_server import utilities
-import tornado.template
+
 from __version__ import version
 
 t_globals = dict(
@@ -13,7 +16,7 @@ t_globals = dict(
     squid_active_time=settings["squid"]["inactive_time"]
 )
 
-TEMPLATES = '../templates/'
+TEMPLATES = 'templates/'
 
 
 def view_index(size=100):
@@ -21,21 +24,21 @@ def view_index(size=100):
         returns an index template with a sorted_shoal list with upper
         and lower bounds from the given size
     """
-    #params = web.input()
-    #page = params.page if hasattr(params, 'page') else 1
-    sorted_shoal = sorted(web.shoal.values(), key=operator.attrgetter('last_active'))
-    sorted_shoal.reverse()
-    total = len(sorted_shoal)
-    #page = int(page)
+    # For testing purposes
+    squid = SquidNode(1, 'somehost', '1111', '1.2.3.4', '5.6.7.8', '6.5.4.3', '100',
+                      {'city': 'Victoria', 'region': 'NA', 'country': 'CA',
+                       'longitude': 123, 'latitude': 456})
+
+    test_shoal = {1: squid}
+    total = len(test_shoal)
     page = 1
-    sorted_shoal = []
 
     try:
         size = int(size)
     except (ValueError, TypeError):
         size = 20
     try:
-        pages = int(math.ceil(len(sorted_shoal) / float(size)))
+        pages = int(math.ceil(len(test_shoal) / float(size)))
     except ZeroDivisionError:
         #TODO: handle this
         raise
@@ -47,7 +50,9 @@ def view_index(size=100):
 
     lower, upper = int(size * (page - 1)), int(size * page)
     loader = tornado.template.Loader(TEMPLATES)
-    return loader.load("index.html").generate(total=total)
+    #TODO: use actual squid active time value
+    return loader.load("index.html").generate(total=total, shoal=test_shoal, now=time.time(),
+                                              page=page, pages=pages, size=size, squid_active_time=120)
 
 
 def view_nearest(count):
