@@ -1,16 +1,14 @@
 import sys
 import os
 import pygeoip
-import web
 import logging
 import gzip
 from time import time
 from math import radians, cos, sin, asin, sqrt
 from urllib import urlretrieve
-
 from config import settings
 
-GEOLITE_DB = settings["general"]["geolitecity_path"]
+GEOLITE_DB = os.path.join(settings["general"]["geolitecity_path"], "GeoLiteCity.dat")
 GEOLITE_URL = settings["general"]["geolitecity_url"]
 GEOLITE_UPDATE = settings["general"]["geolitecity_update"]
 
@@ -28,8 +26,7 @@ def get_geolocation(ip):
         logger.error(e)
         return None
 
-
-def get_nearest_squids(ip, count=10):
+def get_nearest_squids(ip, shoal, count=10):
     """
         Given an IP return a sorted list of nearest squids up to a given count
     """
@@ -49,7 +46,7 @@ def get_nearest_squids(ip, count=10):
 
     ## computes the distance between each squid and the given ip address
     ## and sorts them in a list of squids
-    for squid in web.shoal.values():
+    for squid in shoal.values():
         s_lat = float(squid.geo_data['latitude'])
         s_long = float(squid.geo_data['longitude'])
 

@@ -10,13 +10,20 @@ settings = {}
 default_settings = {
     # General Section
     'general': {
-        'shoal_dir': '/var/shoal/',
-        'static_path': '',
-        'template_path': '',
-        'port': 8080,
-        'geolitecity_path': '',
-        'geolitecity_url': 'http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz',
-        'geolitecity_update': 2592000,
+        'shoal_dir':          { 'default_value': '/var/shoal/',
+                                'type': 'string' },
+        'static_path':        { 'default_value': '',
+                                'type': 'string' },
+        'template_path':     { 'default_value': '',
+                                'type': 'string' },
+        'port':               { 'default_value': 80,
+                                'type': 'int' },
+        'geolitecity_path':   { 'default_value': '',
+                                'type': 'string' },
+        'geolitecity_url':    { 'default_value': 'http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz',
+                                'type': 'string' },
+        'geolitecity_update': { 'default_value':2592000,
+                                'type': 'int' },
     },
     # Squid Section
     'squid': {
@@ -90,6 +97,32 @@ def parse_config(path, temp_settings):
             for option in parser.options(sect):
                 temp_settings[sect][option] = parser.get(sect, option)
 
+
+# Get values set in config file and update settings dictionary
+for section in settings.keys():
+    for key in settings[section]:
+        try:
+            if config_file.has_option(section, key):
+                if settings[section][key]['type'] == 'int':
+                    try:
+                        settings[section][key] = config_file.getint(section, key)
+                    except ValueError:
+                        print "Configuration file problem: %s must be an " \
+                                "int value." % key
+                        exit(1)
+                elif settings[section][key]['type'] == 'bool':
+                    try:
+                        settings[section][key] = config_file.getboolean(section, key)
+                    except ValueError:
+                        print "Configuration file problem: %s must be an " \
+                                "boolean value." % key
+                        exit(1)
+                else:
+                    settings[section][key] = config_file.get(section, key)
+            else:
+                settings[section][key] = settings[section][key]['default_value']
+        except Exception as e:
+            pass
 
 def update_settings():
     if not settings['general']['static_path']:

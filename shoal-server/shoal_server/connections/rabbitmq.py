@@ -1,21 +1,22 @@
 import sys
+import json
+import logging
 import pika
 import socket
 import urllib
 import uuid
-import logging
-import time
-import json
 import utilities
 from shoal_server.shoal import SquidNode
+from time import time
+from pika import adapters
 
 
 class Consumer(object):
     """
-    Basic RabbitMQ async consumer. Consumes messages from a unique queue that is declared when Shoal server first starts.
-    The consumer takes the json in message body, and tracks it in the dictionary `shoal`
+        Basic RabbitMQ async consumer. Consumes messages from a unique queue that is declared when Shoal server first starts.
+        The consumer takes the json in message body, and tracks it in the dictionary `shoal`
     """
-    def __init__(self, settings, io_loop):
+    def __init__(self, settings, shoal):
         """constructor for RabbitMQConsumer, uses values from settings file"""
         self.host = "{0}/{1}".format(settings['rabbitmq']['host'],
                                      urllib.quote_plus(settings['rabbitmq']['virtual_host']))
@@ -24,6 +25,9 @@ class Consumer(object):
         self._channel = None
         self._closing = False
         self._consumer_tag = None
+        self._settings = settings
+        self.shoal = shoal
+
         self.queue = socket.gethostname() + "-" + uuid.uuid1().hex
         self.exchange = settings['rabbitmq']['exchange']
         self.exchange_type = settings['rabbitmq']['exchange_type']
@@ -44,36 +48,21 @@ class Consumer(object):
             logging.error("Could not read SSL files")
             logging.error(e)
 
-        # tries to establish a connection with AMQP server
-        # will retry a number of times before passing the exception up
-        while True:
-            try:
-                connection = pika.SelectConnection(
-                    pika.ConnectionParameters(
-                        host=self.settings['rabbitmq']['host'],
-                        port=self.settings['rabbitmq']['port'],
-                        ssl=self.settings['rabbitmq']['use_ssl'],
-                        ssl_options=ssl_options
-                    ),
-                    self.on_connection_open,
-                    stop_ioloop_on_close=False)
-                return connection
-            except pika.exceptions.AMQPConnectionError as e:
-                failed_connection_attempts += 1
-                if failed_connection_attempts >= self.settings['error']['reconnect_attempts']:
-                    logging.error("Was not able to establish connection to AMQP server after {0} attempts.".format(failed_connection_attempts))
-                    logging.error(e)
-                    raise e
-            logging.error("Could not connect to AMQP Server. Retrying in {0} seconds...".format(settings['error']['reconnect_time']))
-            time.sleep(self.settings['error']['reconnect_time'])
+        logging.debug("Connecting to %s", self._settings["rabbitmq"]["host"])
+        connection = adapters.TornadoConnection(pika.ConnectionParameters(
+                                             host=self._settings['rabbitmq']['host'],
+                                             port=self._settings['rabbitmq']['port'],
+                                             ssl=self._settings['rabbitmq']['use_ssl'],
+                                             ssl_options = ssl_options
+                                           ),
+                                           self.on_connection_open,
+                                           stop_ioloop_on_close=False)
+        return connection
 
-    def close_connection(self):
-        """closes connections with AMQP server"""
-        self._connection.close()
-
-    def add_on_connection_close_callback(self):
-        """adds a connection and closes callback"""
-        self._connection.add_on_close_callback(self.on_connection_closed)
+    def on_connection_open(self, unused_connection):
+        """opens channel and connection"""
+        logging.debug("connection opened.")
+        self._connection.channel(on_open_callback=self.on_channel_open)
 
     def on_connection_closed(self, connection, reply_code, reply_text):
         """stops IO connection loop"""
@@ -85,10 +74,10 @@ class Consumer(object):
                            reply_code, reply_text)
             self._connection.add_timeout(5, self.reconnect)
 
-    def on_connection_open(self, unused_connection):
-        """opens channel and connection"""
-        self.add_on_connection_close_callback()
-        self.open_channel()
+    def close_connection(self):
+        """closes connections with AMQP server"""
+        logging.debug("closing connection.")
+        self._connection.close()
 
     def reconnect(self):
         """stops current IO loop and then reconnects"""
@@ -100,43 +89,34 @@ class Consumer(object):
             # There is now a new connection, needs a new ioloop to run
             self._connection.ioloop.start()
 
-    def add_on_channel_close_callback(self):
-        """adds a channel and closes callback"""
+    def on_channel_open(self, channel):
+        """opens connection on channel"""
+        logging.debug("channel opened.")
+        self._channel = channel
         self._channel.add_on_close_callback(self.on_channel_closed)
+
+        # setup the exchange
+        self._channel.exchange_declare(self.on_exchange_declareok,
+                                       self.exchange,
+                                       self.exchange_type)
 
     def on_channel_closed(self, channel, reply_code, reply_text):
         """closes connection on channel"""
         logging.warning('Channel was closed: (%s) %s', reply_code, reply_text)
         self._connection.close()
 
-    def on_channel_open(self, channel):
-        """opens connection on channel"""
-        self._channel = channel
-        self.add_on_channel_close_callback()
-        self.setup_exchange(self.exchange)
-
-    def setup_exchange(self, exchange_name):
-        """establishes exchange"""
-        self._channel.exchange_declare(self.on_exchange_declareok,
-                                       exchange_name,
-                                       self.exchange_type)
-
     def on_exchange_declareok(self, unused_frame):
         """callback for exchange"""
-        self.setup_queue(self.queue)
-
-    def setup_queue(self, queue_name):
-        """establishes queue, automatically deletes after disconnecting"""
-        self._channel.queue_declare(self.on_queue_declareok, queue_name, auto_delete=True)
+        logging.debug("exchange declared")
+        # setup queue
+        self._channel.queue_declare(self.on_queue_declareok, self.queue, auto_delete=True)
 
     def on_queue_declareok(self, method_frame):
         """callback for queue"""
-        self._channel.queue_bind(self.on_bindok, self.queue,
+        logging.debug("binding %s to %s with %s",
+                        self.exchange, self.queue, self.routing_key)
+        self._channel.queue_bind(self.start_consuming, self.queue,
                                  self.exchange, self.routing_key)
-
-    def add_on_cancel_callback(self):
-        """cancels callback"""
-        self._channel.add_on_cancel_callback(self.on_consumer_cancelled)
 
     def on_consumer_cancelled(self, method_frame):
         """closes channel on consumer"""
@@ -156,30 +136,22 @@ class Consumer(object):
         if self._channel:
             self._channel.basic_cancel(self.on_cancelok, self._consumer_tag)
 
-    def start_consuming(self):
+    def start_consuming(self, unused_frame):
         """starts consuming registered callbacks"""
-        self.add_on_cancel_callback()
+        # add cancel callback
+        self._channel.add_on_cancel_callback(self.on_consumer_cancelled)
         self._consumer_tag = self._channel.basic_consume(self.on_message,
                                                          self.queue)
-
-    def on_bindok(self, unused_frame):
-        """callback for bind"""
-        self.start_consuming()
-
     def close_channel(self):
         """closes channel"""
         self._channel.close()
-
-    def open_channel(self):
-        """opens channel"""
-        self._connection.channel(on_open_callback=self.on_channel_open)
 
     def run(self):
         """sets up connection and starts IO loop"""
         try:
             self._connection = self.connect()
         except Exception as e:
-            logging.error("Unable to connect ot RabbitMQ Server. {0}".format(e))
+            logging.error("Unable to connect to RabbitMQ Server. {0}".format(e))
             sys.exit(1)
         self._connection.ioloop.start()
 
@@ -195,16 +167,18 @@ class Consumer(object):
            the load if there's a key in Shoal. geo_data will update or create a
            new SquidNode if the time since the last timestamp is less than the
            inactive time and a public/private ip exists"""
+        print "GOT A MESSAGE"
         external_ip = public_ip = private_ip = None
         curr = time.time()
 
-        # extracts information from data from body
+        # extracts information from body of AMQP message
         try:
             data = json.loads(body)
         except ValueError as e:
             logging.error("Message body could not be decoded. Message: {1}".format(body))
             self.acknowledge_message(basic_deliver.delivery_tag)
             return
+
         try:
             key = data['uuid']
             hostname = data['hostname']
@@ -216,11 +190,11 @@ class Consumer(object):
             self.acknowledge_message(basic_deliver.delivery_tag)
             return
         try:
-            external_ip = data['external_ip']
+            public_ip = data['public_ip']
         except KeyError:
             pass
         try:
-            public_ip = data['public_ip']
+            external_ip = data['external_ip']
         except KeyError:
             pass
         try:
@@ -231,10 +205,10 @@ class Consumer(object):
         # for each squid in shoal, if public or private ip matches,
         # load for the squid will update and send a acknowledgment message
         for squid in self.shoal.values():
-            if squid.public_ip == public_ip or squid.private_ip == private_ip:
-                squid.update(load)
-                self.acknowledge_message(basic_deliver.delivery_tag)
-                return
+           if squid["public_ip"] == public_ip or squid["private_ip"] == private_ip:
+              squid.update({"load": data["load"]})
+              self.acknowledge_message(basic_deliver.delivery_tag)
+              return
 
         # if there's a key in shoal, shoal's key will update with the load
         if key in self.shoal:
@@ -243,13 +217,15 @@ class Consumer(object):
         # and there exists a public or private ip, then the geo_data will update its location
         # or create a new SquidNode for shoal if the geo_data doesn't exist
         elif (curr - time_sent < self.inactive) and (public_ip or private_ip):
-            geo_data = utilities.get_geolocation(public_ip)
-            if not geo_data:
-                geo_data = utilities.get_geolocation(external_ip)
-            if not geo_data:
-                logging.error("Unable to generate geo location data, discarding message")
-            else:
-                new_squid = SquidNode(key, hostname, squid_port, public_ip, private_ip, external_ip, load, geo_data, time_sent)
-                self.shoal[key] = new_squid
+            """DISABLED DUE TO MAXMIND DATABASE API UPDATE"""
+            #geo_data = utilities.get_geolocation(public_ip)
+            #if not geo_data:
+            #    geo_data = utilities.get_geolocation(external_ip)
+            #if not geo_data:
+            #    logging.error("Unable to generate geo location data, discarding message")
+            #else:
+            """END DISABLE"""
+            data["last_active"] = time()
+            self.shoal[key] = data
 
         self.acknowledge_message(basic_deliver.delivery_tag)
