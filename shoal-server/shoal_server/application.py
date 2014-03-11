@@ -14,6 +14,7 @@ class Application(tornado.web.Application):
         handlers = [
             (r"/", IndexHandler),
             (r"/nearest", NearestHandler),
+            (r"/nearest/(\d+)", NearestHandler),
         ]
         self.global_settings = settings
         self.shoal = {}
