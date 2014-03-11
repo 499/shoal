@@ -25,7 +25,7 @@ def get_nearest_squids(shoal, db_path, ip, count=10):
     """
         Given an IP return a sorted list of nearest squids up to a given count
     """
-    request_data = get_geolocation(db_path, '142.142.142.141')
+    request_data = get_geolocation(db_path, ip)
     if not request_data:
         return None
 
