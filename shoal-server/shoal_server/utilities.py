@@ -8,6 +8,7 @@ import gzip
 from time import time, sleep
 from math import radians, cos, sin, asin, sqrt
 from urllib import urlretrieve
+from tornado import gen
 
 
 def get_geolocation(db_path, ip):
@@ -21,21 +22,19 @@ def get_geolocation(db_path, ip):
         logging.error(e)
         return None
 
-def get_nearest_squids(shoal, db_path, ip, count=10):
-    """
-        Given an IP return a sorted list of nearest squids up to a given count
-    """
+
+@gen.engine
+def calculate_distance(db_path, ip, shoal, callback=None):
     request_data = get_geolocation(db_path, ip)
     if not request_data:
-        return None
-
+        callback(None)
     try:
         r_lat = request_data['latitude']
         r_long = request_data['longitude']
     except KeyError as e:
         logging.error("Could not read request data:")
         logging.error(e)
-        return None
+        callback(None)
 
     nearest_squids = []
 
@@ -45,12 +44,21 @@ def get_nearest_squids(shoal, db_path, ip, count=10):
         s_lat = float(squid['geo_data']['latitude'])
         s_long = float(squid['geo_data']['longitude'])
 
-        distance = haversine(r_lat,r_long,s_lat,s_long)
+        distance = haversine(r_lat, r_long, s_lat, s_long)
 
-        nearest_squids.append((squid,distance))
+        nearest_squids.append((squid, distance))
+    callback(nearest_squids)
 
+
+@gen.engine
+def get_nearest_squids(shoal, db_path, ip, count=10, callback=None):
+    """
+        Given an IP return a sorted list of nearest squids up to a given count
+    """
+    nearest_squids = yield gen.Task(calculate_distance, db_path, ip, shoal)
     squids = sorted(nearest_squids, key=lambda k: (k[1], k[0]['load']))
-    return squids[:int(count)]
+    callback(squids[:int(count)])
+
 
 def haversine(lat1,lon1,lat2,lon2):
     """
