@@ -7,7 +7,7 @@ import utilities
 class IndexHandler(tornado.web.RequestHandler):
     def get(self):
         shoal = self.application.shoal
-        sorted_shoal = [shoal[k] for k in sorted(shoal, key=shoal.get, reverse=True)]
+        sorted_shoal = [shoal[k] for k in sorted(shoal.keys(), key=lambda key: shoal[key]['last_active'], reverse=True)]
         inactive_time = self.application.global_settings['squid']['inactive_time']
         self.render("index.html", shoal=sorted_shoal, inactive_time=inactive_time, now=time.time())
 
