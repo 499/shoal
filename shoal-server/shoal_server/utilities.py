@@ -24,9 +24,6 @@ def get_geolocation(db_path, ip):
 
 @gen.engine
 def calculate_distance(db_path, ip, shoal, callback=None):
-    request_data = get_geolocation(db_path, ip)
-
-def get_nearest_squids(shoal, db_path, ip, count=10):
     """
         Given an IP return a sorted list of nearest squids up to a given count
     """

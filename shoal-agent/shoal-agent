@@ -20,7 +20,7 @@ import urllib2
 from shoal_agent import config
 
 # Time interval to send data
-INTERVAL = config.interval
+INTERVAL = 0#config.interval
 privAddressList = ['172.' + str(x) for x in range(16,32)] + ['10.', '192.168.']
 PRIVATE_ADDRESS = tuple(privAddressList)
 LOG_FORMAT = '%(asctime)s - %(levelname)s - [%(filename)s:%(lineno)s] - %(message)s'
@@ -70,7 +70,8 @@ def get_load_data(interface):
         get_load_data returns the outgoing kilobytes per second of the passed in interface
         note this is UNIX specifc 
     """
-    return 1337
+    import random
+    return random.randint(0,1000000)
     #path = '/sys/class/net/{0}/statistics/tx_bytes'.format(interface)
     #logging.info("Path to '{0}' load data: {1}".format(interface, path))
     #try:
@@ -93,7 +94,8 @@ def get_ip_addresses():
     """
         Uses netifaces to return public and private dictionaries of IP addresses
     """
-    public = {'eth0': '142.142.0.1'}
+    import random
+    public = {'eth0': '{0}.{1}.{1}.{1}'.format(random.randint(1,255), random.randint(0,255))}
     private = {'eth0': '192.168.0.1'}
     #public = {}
     #private = {}
@@ -180,8 +182,11 @@ def main():
         # private/public/external IPs are kept constant while shoal-agent is running
         # the load is read only from a single interface either user specified or the first valid one netifaces finds
         try:
+            import random
+            data['public_ip'] = '{0}.{1}.{1}.{1}'.format(random.randint(1,255), random.randint(0,255))
             data['timestamp'] = time.time()
             data['load'] = get_load_data(interface)
+            data['uuid'] = uuid.uuid1().hex
             try:
                 amqp_send(json.dumps(data))
                 print "SENT"
