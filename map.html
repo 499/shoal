@@ -86,7 +86,10 @@ d3.json("stations.json", function(data) {
           .text(function(d) { return d.key; });
 
       function transform(d) {
-        d = new google.maps.LatLng(d.value[1], d.value[0]);
+		var geoData = d.value.geo_data;
+		d = new google.maps.LatLng(geoData.latitude, geoData.longitude);
+		//var copy = d;
+		//d = new google.maps.LatLng(d.value[1], d.value[0]);
         d = projection.fromLatLngToDivPixel(d);
         return d3.select(this)
             .style("left", (d.x - padding) + "px")
