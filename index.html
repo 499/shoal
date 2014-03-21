@@ -95,6 +95,46 @@
 		</div> <!-- /container -->
   
   
+  
+  
+  
+  		<div class="container">
+			<br>
+			<hr>
+		</div>
+		
+		
+		
+  
+  
+  		<!-- The Supervisors -->
+		<div class="container">
+			<h1>The Supervisors: </h1>
+			<div class="row">
+				<div class="col-6 col-sm-6 col-lg-4">
+					<img src="images/uvic.png", width=200, height=200, class="img-circle">
+					<h2>Dr. Daniel German</h2>
+					<p>Professor at the University of Victoria with interests in software evolution, open source software engineering, and the impact of intellectual property legislation on software development.
+					</p>
+				</div><!--/span-->
+				<div class="col-6 col-sm-6 col-lg-4">
+					<img src="images/uvic.png", width=200, height=200, class="img-circle">
+					<h2>Dr. Ronald J. Desmarais</h2>
+					<p>Researcher / Developer at the University of Victoria with several years of research experience in adaptive systems design. Dr. Desmarais specializes in grid and cloud computing, computational design, and software engineering.
+					</p>
+				</div><!--/span-->
+				<div class="col-6 col-sm-6 col-lg-4">
+					<img src="images/uvic.png", width=200, height=200, class="img-circle">
+					<h2>Mr. Michael Patterson</h2>
+					<p>Researcher with the University of Victoria High Energy Physics Group.</p>
+				</div><!--/span-->
+			</div><!--/row-->
+		</div> <!-- /container -->
+		
+		
+		
+		
+  
 	
 		<div class="container">
 			<hr>
@@ -125,6 +165,8 @@
 		<div class="container">
 			<h1><a name="shoal-readme" class="anchor" href="#shoal-readme"><span class="octicon octicon-link"></span></a>Shoal README</h1>
 			<p>A squid cache publishing and advertising tool designed to work in fast changing environments. </p>
+			
+			<!-- Overview -->
 			<h2><a name="overview" class="anchor" href="#overview"><span class="octicon octicon-link"></span></a>Overview</h2>
 			<p>The purpose of shoal is to allow you to build a continually updated list of squid caches. Each squid runs 
 			shoal-agent which uses AMQP messages to publish the existence and load of the squid to the central shoal-server. 
@@ -132,6 +174,8 @@
 			The IPs of all squid servers are geo-referenced. Clients contact the squid server using a REST interface to 
 			retrieve an ordered list of the nearest squids. The diagram below should give you some idea how this works:</p>
 			<p><img src="images/shoal_diagram.png" alt="shoal diagram"></p>
+			
+			<!-- Components -->
 			<h2><a name="components" class="anchor" href="#components"><span class="octicon octicon-link"></span></a>Components</h2>
 			<p><strong>shoal-server</strong> maintains the list of running squids. It uses RabbitMQ to handle incoming AMQP messages from 
 			squid servers. It provides a REST interface for programatically retrieving a json formatted ordered list of squids.
@@ -139,7 +183,9 @@
 			<p><strong>shoal-agent</strong> runs on squid servers and publishes the load and IP of the squid server to the shoal-server using 
 			a json formatted AMQP message at regular intervals. This agent is designed to be trivially installed in a
 			few seconds with python's pip tool.</p>
-			<p><strong>shoal-client</strong> is a reference client that can be used to contact the REST interface of the shoal-server</p>
+			<p><strong>shoal-client</strong> is a reference client that can be used to contact the REST interface of the shoal-server</p>	
+			
+			<!-- Installing -->
 			<h2><a name="installing" class="anchor" href="#installing"><span class="octicon octicon-link"></span></a>Installing</h2>
 			<p>All the components can be installed independently. Refer to the individual component READMEs for install 
 			instructions:</p>
@@ -149,6 +195,26 @@
 				<li><a href="https://github.com/499/shoal/blob/master/shoal-client/README.md" target="_blank">shoal-client/README.md</a></li>
 			</ul>
 			<p>For people familiar with it, everything is available from PyPI.</p>
+			
+			
+			<!-- Technologies Used -->
+			<h2>Technologies Used</h2>
+			<div class="row">
+				<div class="col-sm-4 col-md-3 col-lg-3">
+					<img src="images/python.png", width=200, height=200, class="img-circle">
+				</div><!--/span-->
+				<div class="col-sm-4 col-md-3 col-lg-3">
+					<img src="images/tornado.jpg", width=200, height=200, class="img-circle">
+				</div><!--/span-->
+				<div class="col-sm-4 col-md-3 col-lg-3">
+					<img src="images/rabbitmq.png", width=200, height=200, class="img-circle">
+				</div><!--/span-->
+				<div class="col-sm-4 col-md-3 col-lg-3">
+					<img src="images/github.jpg", width=200, height=200, class="img-circle">
+				</div><!--/span-->
+			</div><!--/row-->		
+			
+			<!-- License -->
 			<h2><a name="license" class="anchor" href="#license"><span class="octicon octicon-link"></span></a>License</h2>
 			<p>This program is free software; you can redistribute it and/or modify it under the terms of either:</p>
 			<p>a) the GNU General Public License as published by the Free Software Foundation; either version 3, or 
@@ -161,15 +227,16 @@
 			"LICENSE".</p>
 			<p>You should also have received a copy of the GNU General Public License along with this program in 
 			the file named "COPYING". If not, write to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA or visit their web page on the internet at <a href="http://www.gnu.org/copyleft/gpl.html" target="_blank">http://www.gnu.org/copyleft/gpl.html</a>.</p>
-		</div>
+		</div> <!-- /container -->
 
-
+		
+		
 		
 		<div class="container">
 			<hr>
 		</div>
-
-
+		
+		
 		
 		
 		<!-- Footer -->
