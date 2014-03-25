@@ -14,7 +14,7 @@
     <script type="text/javascript" src="http://d3js.org/d3.v3.min.js"></script>
 	<script src="jquery-1.10.2.min.js"></script>
     <style type="text/css">
-
+	
 	html, body, #map {
 	  width: 100%;
 	  height: 100%;
@@ -90,9 +90,9 @@
 	<div id="map">
 	</div>
 	
-	
+	<!-- Javascript for the Google map -->
     <script type="text/javascript">
-		// Create the Google Map…
+		// Create the Google Map with various settings
 		var map = new google.maps.Map(d3.select("#map").node(), {
 		  zoom: 3,
 		  center: new google.maps.LatLng(23.75, -10),
@@ -126,13 +126,6 @@
 				  .attr("r", 4.5)
 				  .attr("cx", padding)
 				  .attr("cy", padding);
-				  
-			  /*marker.append("svg:image")
-				.attr('x',-20)
-				.attr('y',-12)
-				.attr('width', 100)
-				.attr('height', 100)
-				.attr("xlink:href","icon.jpg")*/
 
 			  // Add a label.
 			  marker.append("svg:text")
@@ -142,10 +135,9 @@
 				  .text(function(d) { return d.key; });
 
 			  function transform(d) {
+				// parse the json object
 				var geoData = d.value[0].geo_data;
 				d = new google.maps.LatLng(geoData.latitude, geoData.longitude);
-				//var copy = d;
-				//d = new google.maps.LatLng(d.value[1], d.value[0]);
 				d = projection.fromLatLngToDivPixel(d);
 				return d3.select(this)
 					.style("left", (d.x - padding) + "px")
@@ -154,10 +146,11 @@
 			};
 		  };
 
-		  // Bind our overlay to the map…
+		  // Bind our overlay to the map
 		  overlay.setMap(map);
 		});
     </script>
+	
 	<div class="container-fluid">
       <div class="row-fluid">
 	  {% block body %}
