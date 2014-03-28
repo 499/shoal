@@ -1,7 +1,7 @@
 import json
 import tornado.web
 import time
-from utilities import get_nearest_squids
+from utilities import get_nearest_squids, generate_wpad
 from tornado import gen
 
 
@@ -37,3 +37,24 @@ class AllSquidHandler(tornado.web.RequestHandler):
         sorted_shoal = [shoal[k] for k in sorted(shoal.keys(), key=lambda key: shoal[key]['last_active'], reverse=True)]
 
         self.write(json.dumps(sorted_shoal))
+
+class WPADHandler(tornado.web.RequestHandler):
+    @tornado.web.asynchronous
+    @tornado.gen.engine
+    def get(self):
+        ip = self.request.remote_ip
+        db_path = self.application.global_settings['general']['geolitecity_path']
+        shoal = self.application.shoal
+        proxy = yield gen.Task(generate_wpad, shoal, ip, db_path)
+        self.set_header('Content-Type', 'application/x-ns-proxy-autoconfig')
+        if proxy:
+            wpad = "function FindProxyForURL(url, host) { return \"%s DIRECT\";}" % proxy
+            self.set_header('Content-Length', len(wpad))
+            self.write(wpad)
+        else:
+            wpad = "function FindProxyForURL(url, host) { return \"DIRECT\";})"
+            self.set_header('Content-Length', len(wpad))
+            self.write(wpad)
+        self.finish()
+
+

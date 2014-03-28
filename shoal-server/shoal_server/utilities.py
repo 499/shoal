@@ -116,18 +116,20 @@ def download_geolitecity(db_url, db_path, db_update):
     if check_geolitecity_need_update(db_url, db_update):
         logging.error('GeoLiteCity database failed to update.')
 
-def generate_wpad(shoal, ip):
+@gen.engine
+def generate_wpad(shoal, ip, db_path, callback=None):
     """
         Parses the JSON of nearest squids and provides the data as a wpad
     """
-    squids = get_nearest_squids(ip, shoal)
+    squids = yield gen.Task(get_nearest_squids, shoal, db_path, ip, count=5)
     if squids:
         proxy_str = ''
         for squid in squids:
             try:
-                proxy_str += "PROXY http://{0}:{1};".format(squid[0].hostname,squid[0].squid_port)
+                proxy_str += "PROXY http://{0}:{1};".format(squid[0]['hostname'], squid[0]['squid_port'])
             except TypeError as e:
                 continue
-        return proxy_str
+        callback(proxy_str)
     else:
-        return None
+        callback({})
+

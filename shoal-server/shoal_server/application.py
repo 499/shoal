@@ -5,8 +5,7 @@ import tornado.web
 import tornado.ioloop
 import utilities
 
-from handlers import IndexHandler, NearestHandler, AllSquidHandler
-from os.path import join
+from handlers import IndexHandler, NearestHandler, AllSquidHandler, WPADHandler
 
 
 class Application(tornado.web.Application):
@@ -15,6 +14,7 @@ class Application(tornado.web.Application):
             (r"/", IndexHandler),
             (r"/nearest", NearestHandler),
             (r"/nearest/?(\d+)?/?", NearestHandler),
+            (r"/wpad.dat", WPADHandler),
             (r"/all", AllSquidHandler),
         ]
         self.global_settings = settings
